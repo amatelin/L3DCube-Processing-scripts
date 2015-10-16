@@ -22,7 +22,8 @@ void setup() {
   colorMode(HSB, 255);               // allows us to access the brightness of a color
 
   cube=new L3D(this);
-  frame=0;
+  cube.enableMulticastStreaming(2000);
+  frame=8;
   
 }
 
