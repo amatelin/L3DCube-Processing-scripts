@@ -1,43 +1,98 @@
+import http.requests.*;
 import L3D.*;
 
-L3D cube;
-PVector center;
-PVector[] polarCoord = {new PVector(51.507222, -0.1275), // London
-  new PVector(48.8567, 2.3508), // Paris
-  new PVector(40.4000, -3.7167), // Madrid
-  new PVector(55.7500, 37.6167), // Moscow
-  new PVector(45.5017, -73.5673), // Montreal
-  new PVector(41.8369, -87.6847), // Chicago
-  new PVector(40.7127, -87.6847), // NYC
-  new PVector(34.05, -118.25), // LA
-  new PVector(39.9167, 116.3833), // Beijing
-  new PVector(-23.5500, -46.6333), // Sao Paulo
-  new PVector(-26.2044, 28.0456)}; // Johannesburg 
+GetRequest get;
+Table table;
+String API_KEY = "3a95483c6a080fe9738e3308fd66c909";
+String requestStart = "http://api.openweathermap.org/data/2.5/group?id=";
+String requestEnd = "&units=metric&appid=" + API_KEY;
+String subQueries[] = {"", ""};
+String request;
+String response;
 
-PVector[] cartesCoord = new PVector[11];
+JSONObject json;
+JSONArray results;
+color[] colors = new color[194];
+
+L3D cube;
+int radius = 4;
+PVector center;
+PVector[] polarCoord = new PVector[194];
+PVector[] cartesCoord = new PVector[194];
+
 
 void setup() {
-  int radius = 4;
-  processCoordinates(radius);
+  table = loadTable("openweathermap_cities.csv", "header");
+
+  int i = 0;
+  for (TableRow row : table.rows()) {
+    
+    polarCoord[i] = new PVector(row.getFloat("lat"), row.getFloat("long"));
+    println(i);
+
+    if (i<100) {
+      subQueries[0] += row.getInt("api_id") + ",";
+    } else {
+      subQueries[1] += row.getInt("api_id") + ",";
+    }
+    
+    i++;
+  }
+  
+  for (int j=0; j<2; j++){
+    request = requestStart + subQueries[j] + requestEnd;
+    get = new GetRequest(request);
+    get.send();
+    response = get.getContent();
+    JSONObject jsonObject = parseJSONObject(response);
+    results = jsonObject.getJSONArray("list");
+    for (int k=0; k<results.size(); k++) {
+      println(k);
+      float temperature = results.getJSONObject(k).getJSONObject("main").getFloat("temp");
+      colors[k+(j*100)] = processColor(temperature);
+    }
+  }
 
   size(displayWidth, displayHeight, P3D);
   cube = new L3D(this);
+  //cube.enableMulticastStreaming(2000);
+  
+  processCoordinates(radius);
   plotCoordinates();
 }
+
 
 void draw() {
   background(0);
   lights();
 }
 
+color processColor(float value) {
+  color c1 = color(99,184, 255);
+  color c2 = color(   255, 97,3);
+  int maxTemp = 60;
+  int minTemp = -60;
+  float inter = map(value, maxTemp, minTemp, 0, 1);
+   
+  color c = lerpColor(c1, c2, inter);
+   
+  return c;
+}
+
 void plotCoordinates() {
   for (int i=0; i<cartesCoord.length; i++) {
-    cube.setVoxel(cartesCoord[i], color(random(255), random(255), random(255)));
+    try {
+      cube.setVoxel(cartesCoord[i], colors[i]);
+    } catch(NullPointerException e) {
+    
+    }; 
   }
 }
 
 void processCoordinates(int radius) {
+  println(polarCoord.length);
   for (int i=0; i<polarCoord.length; i++) {
+    println(i);
     cartesCoord[i] = projectCoordinates(polarCoord[i].x, polarCoord[i].y, radius);
   }
 }
@@ -48,7 +103,6 @@ PVector projectCoordinates(float latitude, float longitude, float r) {
   float x = (cos(phi)*cos(theta)*r)+4;
   float y = (sin(phi)*cos(theta)*r)+4;
   float z = (sin(theta)*r)+4;
-  println("x:"+x+"y:"+y+"z:"+z);
-  println("x:"+round(x)+"y:"+round(y)+"z:"+round(z));
+  
   return new PVector(floor(x), floor(y), floor(z));
 }
