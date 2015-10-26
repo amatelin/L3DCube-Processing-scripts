@@ -41,22 +41,10 @@ void draw() {
   //this.rotateY((float)90);
 }
 
-color processColor(float value) {
-  color c1 = color(99,184, 255);
-  color c2 = color(   255, 97,3);
-  int maxTemp = 60;
-  int minTemp = -60;
-  float inter = map(value, maxTemp, minTemp, 0, 1);
-   
-  color c = lerpColor(c1, c2, inter);
-   
-  return c;
-}
-
 void plotCoordinates() {
   for (int i=0; i<cartesCoord.length; i++) {
     try {
-      cube.setVoxel(cartesCoord[i], color(random(255), random(255), random(255)));
+      cube.setVoxel(cartesCoord[i], color(random(255),random(255),random(255)));
     } catch(NullPointerException e) {
     
     }; 
@@ -78,5 +66,9 @@ PVector projectCoordinates(float latitude, float longitude, float r) {
   float y = (sin(phi)*cos(theta)*r)+4;
   float z = (sin(theta)*r)+4;
   
-  return new PVector(floor(x), floor(y), floor(z));
+  float rad = 90*PI/180;
+  //x = x*cos(rad)+y*sin(rad);
+  //y = -x*sin(rad)+y*cos(rad);
+  
+  return new PVector(floor(z), floor(x), floor(y));
 }

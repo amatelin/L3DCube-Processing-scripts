@@ -1,4 +1,4 @@
-#include "neopixel/neopixel.h"
+#include "neopixel.h"
 
 
 UDP Udp;
@@ -26,7 +26,7 @@ typedef struct{
 void setPixel(int x, int y, int z, color col);  //sets a pixel at position (x,y,z) to the col parameter's color
 int setPort(String _port);
 
-void setup() 
+void setup()
 {
     port=2000;
   strip.begin();
@@ -102,7 +102,7 @@ if (bytesrecv==PIXEL_COUNT) {
                 color pixelColor={ (data[index]&0xE0)>>2, (data[index]&0x1C)<<1, (data[index]&0x03)<<4};   //colors with max brightness set to 64
                 setPixel(x,y,z,pixelColor);
             }
-        
+
     }
     strip.show();
     if(!digitalRead(MODE))

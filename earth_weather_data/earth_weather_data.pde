@@ -59,20 +59,23 @@ void setup() {
   
   processCoordinates(radius);
   plotCoordinates();
+
 }
 
 
 void draw() {
+  scale(3);
+  translate(-650, -350, 0);
   background(0);
   lights();
 }
 
 color processColor(float value) {
   color c1 = color(99,184, 255);
-  color c2 = color(   255, 97,3);
-  int maxTemp = 60;
-  int minTemp = -60;
-  float inter = map(value, maxTemp, minTemp, 0, 1);
+  color c2 = color(255, 97,3);
+  int maxTemp = 80;
+  int minTemp = -40;
+  float inter = map(value, minTemp, maxTemp, 0, 1);
    
   color c = lerpColor(c1, c2, inter);
    
