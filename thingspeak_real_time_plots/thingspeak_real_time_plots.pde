@@ -1,59 +1,74 @@
 import http.requests.*;
 import L3D.*;
 
+
+// First set-up the request url
 GetRequest get;
+String channelId = "53833"; // id of the thingspeak channel to connect to
+String requestParams = "?average=240&days=2"; // retrieve the average values over 4h periods
 String requestStart = "https://api.thingspeak.com/channels/";
-String requestEnd = "/feeds.json";
-String channelId = "53833";
-String request = requestStart + channelId + requestEnd;
+String requestEnd = "/feeds.json/";
+
+String request = requestStart + channelId + requestEnd + requestParams;
 String response;
 
-int[][] data = new int[4][8];
-int[][] metadata = {{15, 30}, {30, 40}, {1015, 1050}, {0, 90}};
-String[] fields = {"field1", "field2", "field3", "field4"};
-color[] colors = {color(227, 131, 5), color(75, 97, 222), color(23, 181, 14), color(236, 242, 44)};
+// Set-up parameters for the plots
+int[][] metadata = {{15, 25}, {30, 40}, {1000, 1050}, {0, 80}}; // lower and upper range of the data series. Used to map original values on 8 voxels
+String[] fields = {"field1", "field2", "field3", "field4"}; // name of the fields to retrieve from json
+color[] colors = {color(227, 131, 5), color(75, 97, 222), color(23, 181, 14), color(236, 242, 44)}; // colors to be used to display the series
 
-JSONObject json;
-JSONArray results;
-
+// Instanciate cube object
 L3D cube;
 
+int nextUpdate = 0;
+
 void setup() {
-  size(displayWidth, displayHeight, P3D);
-  cube = new L3D(this);
+  size(displayWidth, displayHeight, P3D);  // start simulation with 3d mode enabled
+  cube = new L3D(this); // init cube 
+  //cube.enableMulticastStreaming(2000); // enable streaming of voxel colors
   
-  get = new GetRequest(request);
-  get.send();
-  response = get.getContent();
-  JSONObject jsonObject = parseJSONObject(response);
-  results = jsonObject.getJSONArray("feeds");
-  int k = results.size();
-  print(results);
-  print(k);
-  
-  for (int i=0; i<8; i++) {
-    for (int j=0; j<4; j++) {
-      float value = results.getJSONObject(k-i-1).getFloat(fields[j]);
-      data[j][i] = round(map(value, metadata[j][0], metadata[j][1], 0, 7));
-      println(data[j][i]);
-      cube.setVoxel(i,data[j][i],j*2,colors[j]);
-      cube.setVoxel(i,data[j][i],(j*2)+1,colors[j]);
-      
-    }
-  }
-
-  //print(results);
-  
-  
-
-
+  updateData();
 }
 
-
-
 void draw() {
+  // Adjustements so that the simulation fits my display properly
   scale(3);
   translate(-650, -350, 0);
   background(0);
   lights();
+ 
+  print(updateTime);
+}
+
+void updateData() {
+  JSONArray results = getData(); // retrieve data
+  int k = results.size();
+  
+  // Display data as scatter plot mapped on 8 voxels
+  // only the 8 last data points are displayed
+  for (int i=0; i<8; i++) {
+    for (int j=0; j<4; j++) {
+      float value = results.getJSONObject(k-i-1).getFloat(fields[j]);
+      int roundedValue = round(map(value, metadata[j][0], metadata[j][1], 0, 7));
+      cube.setVoxel(i,roundedValue,j*2,colors[j]);
+      cube.setVoxel(i,roundedValue,(j*2)+1,colors[j]); // We give a 2 voxel thickness to each data point
+    }
+  }  
+}
+
+JSONArray getData() {
+  JSONObject jsonObject;
+  JSONArray results;
+  
+  get = new GetRequest(request); 
+  get.send(); // send GET request to thingspeak
+  response = get.getContent(); // retrieve response 
+  jsonObject = parseJSONObject(response); // parse response
+  results = jsonObject.getJSONArray("feeds"); // get data from response as Array
+  
+  return results;
+}
+
+void scheduleNextUpdate() {
+
 }
