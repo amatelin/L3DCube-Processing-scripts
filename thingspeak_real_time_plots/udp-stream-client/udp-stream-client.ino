@@ -49,6 +49,7 @@ void setup()
 {
   port=2000;
   strip.begin();
+  strip.clear();
   strip.show(); // Initialize all pixels to 'off'
   Udp.begin (port);
   pinMode(MODE,INPUT_PULLUP);
@@ -158,13 +159,6 @@ void updateAccelerometer() {
   Accelerometer[0] = analogRead(X);
   Accelerometer[1] = analogRead(Y);
   Accelerometer[2] = analogRead(Z);
-
-  Serial.println("X");
-  Serial.println(Accelerometer[0]);
-  Serial.println("Y");
-  Serial.println(Accelerometer[1]);
-  Serial.println("Z");
-  Serial.println(Accelerometer[2]);
 }
 
 void updateTiltState() {
@@ -180,9 +174,9 @@ void updateTiltState() {
 void slideAxis() {
   static int index = 0;
 
-  if (tiltState == tiltFront) {
+  if (tiltState == tiltBack) {
     index--;
-  } else if (tiltState == tiltBack) {
+  } else if (tiltState == tiltFront) {
     index++;
   }
 
