@@ -191,5 +191,5 @@ void slideAxis() {
   } else if (index>3) {
     index=0;
   }
-  mempcpy(z_axis, z_axis_versions[index], 8);
+  mempcpy(z_axis, z_axis_versions[index], 8*sizeof(int));
 }

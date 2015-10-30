@@ -107,5 +107,6 @@ PVector projectCoordinates(float latitude, float longitude, float r) {
   float y = (sin(phi)*cos(theta)*r)+4;
   float z = (sin(theta)*r)+4;
   
-  return new PVector(floor(x), floor(y), floor(z));
+
+  return new PVector(floor(y), floor(z), floor(x));
 }

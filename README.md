@@ -17,7 +17,6 @@ The result is saved in a csv file that is loaded in Processing and used to query
 on the cube using a gradient of color. 
 
 **TODO**:
-* Adjust coordinates on cube : 90 degrees North, 90 degrees West. 
 * Choose better colors for gradient. 
 * Add rotation animation. 
 * Add auto update of temperatures. 
