@@ -1,6 +1,5 @@
 #include "neopixel.h"
 
-
 UDP Udp;
 unsigned count = 0;
 
@@ -26,15 +25,35 @@ typedef struct{
 void setPixel(int x, int y, int z, color col);  //sets a pixel at position (x,y,z) to the col parameter's color
 int setPort(String _port);
 
+/*
+Frames switching mechanism
+*/
+int z_axis_versions[][8] = {{0, 1, 2, 3, 4, 5, 6, 7},
+                          {6, 7, 0, 1, 2, 3, 4, 5},
+                          {4, 5, 6, 7, 0, 1, 2, 3},
+                          {2, 3, 4, 5, 6, 7, 0, 1}};
+
+int z_axis[] = {0, 1, 2, 3, 4, 5, 6, 7};
+// Accelerometer related values
+#define X 13
+#define Y 14
+#define Z 15
+int Accelerometer[4];
+long updateTime = 0;
+enum tiltState_t {idle, tiltBack, tiltFront};
+tiltState_t tiltState;
+
+bool dataReceived = false;
+
 void setup()
 {
-    port=2000;
+  port=2000;
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
   Udp.begin (port);
   pinMode(MODE,INPUT_PULLUP);
-    if(!digitalRead(MODE))
-        WiFi.listen();
+  if(!digitalRead(MODE))
+      WiFi.listen();
   Serial.begin(115200);
   Serial.println("initializing...");
   updateNetworkInfo();
@@ -47,10 +66,10 @@ void setup()
 //The function setPort lets a streaming program set the port on which the core will listen for streaming packets
 void initSparkVariables()
 {
-    Spark.variable("IPAddress", localIP, STRING);
-    Spark.variable("MACAddress", macAddress, STRING);
-    Spark.variable("port", &port, INT);
-    Spark.function("setPort", setPort);
+  Spark.variable("IPAddress", localIP, STRING);
+  Spark.variable("MACAddress", macAddress, STRING);
+  Spark.variable("port", &port, INT);
+  Spark.function("setPort", setPort);
 }
 
 //updates the local IP address and mac address and stores them in global strings
@@ -59,59 +78,118 @@ void initSparkVariables()
 
 void updateNetworkInfo()
 {
-    IPAddress myIp = WiFi.localIP();
-    sprintf(localIP, "%d.%d.%d.%d", myIp[0], myIp[1], myIp[2], myIp[3]);
-    byte macAddr[6];
-    WiFi.macAddress(macAddr);
-    sprintf(macAddress, "%02x:%02x:%02x:%02x:%02x:%02x",macAddr[5],macAddr[4],macAddr[3],macAddr[2],macAddr[1],macAddr[0]);
+  IPAddress myIp = WiFi.localIP();
+  sprintf(localIP, "%d.%d.%d.%d", myIp[0], myIp[1], myIp[2], myIp[3]);
+  byte macAddr[6];
+  WiFi.macAddress(macAddr);
+  sprintf(macAddress, "%02x:%02x:%02x:%02x:%02x:%02x",macAddr[5],macAddr[4],macAddr[3],macAddr[2],macAddr[1],macAddr[0]);
 
-    //print it out the serial port
-    Serial.print("local IP Address: ");
-    Serial.println(localIP);
-    Serial.print("MAC address:  ");
-    Serial.println(macAddress);
+  //print it out the serial port
+  Serial.print("local IP Address: ");
+  Serial.println(localIP);
+  Serial.print("MAC address:  ");
+  Serial.println(macAddress);
 }
 
 int setPort(String _port)
 {
-    port=_port.toInt();
-    Udp.begin(port);
-    return port;
+  port=_port.toInt();
+  Udp.begin(port);
+  return port;
 }
 
 
 void loop (void)
 {
-int32_t bytesrecv = Udp.parsePacket();
+  int32_t bytesrecv = Udp.parsePacket();
 
-if(millis()-lastUpdated>60000)  //update the network settings every minute
-{
-    updateNetworkInfo();
-    lastUpdated=millis();
-}
+  if(millis()-lastUpdated>60000)  //update the network settings every minute
+  {
+      updateNetworkInfo();
+      lastUpdated=millis();
+  }
 
-if (bytesrecv==PIXEL_COUNT) {
+  if (bytesrecv==PIXEL_COUNT) {
     Udp.read(data,bytesrecv);
-    for(int x=0;x<SIDE;x++)
-        for(int y=0;y<SIDE;y++)
-            for(int z=0;z<SIDE;z++)
-            {
-                int index = z*64 + y*8 + x;
-//                color pixelColor={ data[index]&0xE0, (data[index]&0x1C)<<3, (data[index]&0x03)<<6};   //colors as encoded
-//                color pixelColor={ (data[index]&0xE0)>>1, (data[index]&0x1C)<<2, (data[index]&0x03)<<5};   //colors with max brightness set to 128
-                color pixelColor={ (data[index]&0xE0)>>2, (data[index]&0x1C)<<1, (data[index]&0x03)<<4};   //colors with max brightness set to 64
-                setPixel(x,y,z,pixelColor);
-            }
+    dataReceived = true;
+  }
 
+  if (dataReceived) {
+    displayPixels();
+  }
+
+  if(!digitalRead(MODE))
+      WiFi.listen();
+
+  if ((millis()-updateTime)>500) {
+    updateAccelerometer();
+    updateTiltState();
+
+    if (tiltState!=idle) {
+      slideAxis();
     }
-    strip.show();
-    if(!digitalRead(MODE))
-        WiFi.listen();
+
+    updateTime = millis();
+  }
 }
 
 //sets a pixel at position (x,y,z) to the col parameter's color
 void setPixel(int x, int y, int z, color col)
 {
-    int index = z*64 + x*8 + y;
-    strip.setPixelColor(index,strip.Color(col.red,  col.green, col.blue));
+  int index = z*64 + x*8 + y;
+  strip.setPixelColor(index,strip.Color(col.red,  col.green, col.blue));
+}
+
+void displayPixels() {
+  Serial.println("One display");
+  for(int x=0;x<SIDE;x++)
+  for(int y=0;y<SIDE;y++)
+  for(int z=0;z<SIDE;z++)
+  {
+    Serial.print(z_axis[z]);
+    int index = z_axis[z]*64 + y*8 + x;
+    color pixelColor={ (data[index]&0xE0)>>2, (data[index]&0x1C)<<1, (data[index]&0x03)<<4};   //colors with max brightness set to 64
+    setPixel(x,y,z,pixelColor);
+  }
+  strip.show();
+}
+
+void updateAccelerometer() {
+  Accelerometer[0] = analogRead(X);
+  Accelerometer[1] = analogRead(Y);
+  Accelerometer[2] = analogRead(Z);
+
+  Serial.println("X");
+  Serial.println(Accelerometer[0]);
+  Serial.println("Y");
+  Serial.println(Accelerometer[1]);
+  Serial.println("Z");
+  Serial.println(Accelerometer[2]);
+}
+
+void updateTiltState() {
+  if (Accelerometer[0]<1950) {
+    tiltState = tiltBack;
+  } else if (Accelerometer[0]>2150) {
+    tiltState = tiltFront;
+  } else {
+    tiltState = idle;
+  }
+}
+
+void slideAxis() {
+  static int index = 0;
+
+  if (tiltState == tiltFront) {
+    index--;
+  } else if (tiltState == tiltBack) {
+    index++;
+  }
+
+  if (index<0) {
+    index=3;
+  } else if (index>3) {
+    index=0;
+  }
+  mempcpy(z_axis, z_axis_versions[index], 8);
 }

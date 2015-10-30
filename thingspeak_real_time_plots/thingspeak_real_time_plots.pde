@@ -21,13 +21,12 @@ color[] colors = {color(227, 131, 5), color(75, 97, 222), color(23, 181, 14), co
 L3D cube;
 
 int nextUpdate = 0;
+int updateRate = 4; // update rate in hours. Since the each data point is an average over 4h, update every 4h
 
 void setup() {
   size(displayWidth, displayHeight, P3D);  // start simulation with 3d mode enabled
   cube = new L3D(this); // init cube 
-  //cube.enableMulticastStreaming(2000); // enable streaming of voxel colors
-  
-  updateData();
+  cube.enableMulticastStreaming(2000); // enable streaming of voxel colors
 }
 
 void draw() {
@@ -36,13 +35,17 @@ void draw() {
   translate(-650, -350, 0);
   background(0);
   lights();
- 
-  print(updateTime);
+  
+  if ((millis()-nextUpdate)>0) {
+    updateData();
+    nextUpdate = millis() + updateRate*60*60;
+  }
 }
 
 void updateData() {
   JSONArray results = getData(); // retrieve data
   int k = results.size();
+  int x = 7;
   
   // Display data as scatter plot mapped on 8 voxels
   // only the 8 last data points are displayed
@@ -50,9 +53,10 @@ void updateData() {
     for (int j=0; j<4; j++) {
       float value = results.getJSONObject(k-i-1).getFloat(fields[j]);
       int roundedValue = round(map(value, metadata[j][0], metadata[j][1], 0, 7));
-      cube.setVoxel(i,roundedValue,j*2,colors[j]);
-      cube.setVoxel(i,roundedValue,(j*2)+1,colors[j]); // We give a 2 voxel thickness to each data point
+      cube.setVoxel(x,roundedValue,j*2,colors[j]);
+      cube.setVoxel(x,roundedValue,(j*2)+1,colors[j]); // We give a 2 voxel thickness to each data point
     }
+    x--;
   }  
 }
 
@@ -67,8 +71,4 @@ JSONArray getData() {
   results = jsonObject.getJSONArray("feeds"); // get data from response as Array
   
   return results;
-}
-
-void scheduleNextUpdate() {
-
 }
