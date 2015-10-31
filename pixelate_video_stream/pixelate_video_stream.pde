@@ -35,7 +35,7 @@ void setup() {
   pOut.loadPixels(); // init pixels
 
   cube=new L3D(this); // init cube
-  cube.enableMulticastStreaming(24); // start streaming current animation on port 2000
+  cube.enableMulticastStreaming(2000); // start streaming current animation on port 2000
 }
 
 void draw() {

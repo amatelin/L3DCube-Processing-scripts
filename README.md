@@ -35,6 +35,14 @@ The webcam stream could easily be substituted for any video stream if need be.
 **TODO**:
 * Use average color over the surface of each input square instead of the central pixel value. 
 
+### Real time scatter plots
+[Folder](https://github.com/amatelin/L3DCube-Processing-scripts/tree/master/thingspeak_real_time_plots)
+Demonstration of the plotting capabilites of the cube. Data is retrieved from a public [thingspeak channel](https://thingspeak.com/channels/53833) (they correspond to 
+data points posted by a connected barometer installed in my living room). 
+The json returned by the thingspeak api is parsed on processing and displayed on the cube. Each serie of data is represented by a 2 voxels thick scatter plot. 
+
+The client code on the photon is a variation of the main client: we use the accelerometer data to give the ability to change the plot displayed on the front frames of the cube. 
+
 ### UDP stream client
 [Folder](https://github.com/amatelin/L3DCube-Processing-scripts/tree/master/udp-stream-client)
 
