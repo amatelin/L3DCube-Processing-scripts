@@ -9,10 +9,11 @@ L3D cube;
 
 PImage image;
 
-
+int simulationSize = 32;
+int mode = 0;
 
 void setup() {
-  size(512, 424); // start simulation with 3d mode enabled
+  size(480, 480, P3D); // start simulation with 3d mode enabled
   
   
   kinect = new Kinect2(this);
@@ -20,80 +21,85 @@ void setup() {
   //kinect.initRegistered();
   kinect.initDevice();
 
-  //image = new PImage(40, 40);
-  image = createImage(kinect.depthWidth, kinect.depthHeight, RGB);
+  image = createImage(simulationSize, simulationSize, RGB);
   image.loadPixels();
   
-  //cube=new L3D(this); // init cube
+  cube=new L3D(this); // init cube
 }
 
-void draw() {
-  //cube.background(0);
-  background(0);
-  noFill();
-    scale(3);
-   translate(-170,-140);
-
-  
-  //image = kinect.getDepthImage();
-  //image(image, 0, 0);
+ArrayList<Integer> getDepthSubset(int x_width, int y_height, int resultSize) {
   int[] depth = kinect.getRawDepth();
-  //int[] depthExtract = new int[160000];
   ArrayList<Integer> depthExtract = new ArrayList<Integer>();
-  int[] projection = new int[64];
   
-  int index = 0;
-  int sum = 0;  int w1 = 400;
-  int off_x = 192;
-  int off_y = 148;
+  int sum = 0;
+  int index = 0; 
+  int off_x = (kinect.depthWidth - x_width)/2;
+  int off_y = (kinect.depthHeight - y_height)/2;
   
   for (int i=off_x; i<kinect.depthWidth-off_x; i++)
   for (int j=off_y; j<kinect.depthHeight-off_y; j++)
   {
     int offset = i + (j * kinect.depthWidth);
-    float c = map(depth[offset], 0, 4500, 0, 255);
-
-    image.pixels[offset] = color(c, 0, 0);
-    //depthExtract.add(depth[i+(j*w1)]);
-    //sum += depth[i+(j*w1)];
-    //index++;
     
-    //if (index>=1) {
-    //  depthExtract.add(sum/1);
-    //  index=0;
-    //  sum=0;
-    //  //depthExtract[(i-55)*(j-18)-(10*index)] = sum/10;
-    //}
-    //if (depth[i*j]>10&&depth[i*j]<2000) {
-    //  depthExtract[(i-55)*(j-18)] = depth[i*j];
-    //} else {
-    //  depthExtract[(i-55)*(j-18)] = -1;
-    //}
+    sum += depth[offset];
+    index ++;
+    
+    if (index >= x_width/resultSize) {
+      depthExtract.add(sum/(x_width/resultSize));
+      sum = 0;
+      index = 0; 
+    }
   }
   
-  //int loc=0;
-  //int w2 = 400;
-  //for(int x=0; x<w2; x+=1)
-  //for (int y=0; y<w2; y+=1)
-  //{
-  //  float c = map(depthExtract.get(x+(y*w2)), 0, 4500, 0, 255);
-  //  image.pixels[x+(y*w2)] =  color(c, 0, 0);
-  // //println(depthExtract[x*y]);
-  // //if (depthExtract[x*y]!=-1) {
-  // //  projection[loc] = round(map(depthExtract[x*y], 0, 2000, 7, 0));
-  // //} else {
-  // //  projection[loc] = -1;
-  // //}
-   
-   
-  // //println(projection[loc]);
-   
-  // //cube.setVoxel((x/8), (y/8), projection[loc], color(255, 0, 0));
-  // loc++;
-  //}
+  return depthExtract;
+}
 
+void show2D(int size) {
+  scale(350/size);
+  translate(2, 2);
+  
+  ArrayList<Integer> depthExtract = getDepthSubset(128, 128, size);
+  
+  for(int x=0; x<size; x++)
+  for (int y=0; y<size; y++)
+  {
+    float c = map(depthExtract.get(x+(y*size)), 0, 4500, 255, 0);
+     image.pixels[y+(x*size)] =  color(c, 0, 0);
+  }
+  
   image.updatePixels();
   image(image, 0, 0);
+}
 
+void showCube() {
+  cube.background(0);
+  
+  ArrayList<Integer> depthExtract = getDepthSubset(128, 128, 8);
+  int[] index = {7, 6, 5, 4, 3, 2, 1, 0};
+  
+  for(int x=0; x<8; x++)
+  for (int y=0; y<8; y++)
+  {
+    float c = map(depthExtract.get(y+(x*8)), 0, 4500, 255, 0);
+    int z = round(map(depthExtract.get(y+(x*8)), 500, 3000, 7, 0));
+    cube.setVoxel(x, 7-y, z, color(c, 0, 0));
+  }
+}
 
+void draw() {
+  background(0);
+  noFill();
+  
+  if (mode == 0) {
+    show2D(simulationSize);
+  } else {
+    showCube();
+  }
+  
+}
+
+void mousePressed() {
+  if (mouseButton == RIGHT) {
+    mode = (mode == 1 ? 0 : 1);
+  }
 }
