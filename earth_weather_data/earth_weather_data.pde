@@ -1,76 +1,95 @@
 import http.requests.*;
 import L3D.*;
 
+// First set-up the request url
 GetRequest get;
-String API_KEY = "3a95483c6a080fe9738e3308fd66c909";
-String requestStart = "http://api.openweathermap.org/data/2.5/group?id=";
-String requestEnd = "&units=metric&appid=" + API_KEY;
-String subQueries[] = {"", ""};
+String API_KEY = "YOUR_API_KEY"; // Your OpenWeatherMap API key to authenticate your requests
+String requestStart = "http://api.openweathermap.org/data/2.5/group?id="; // base url for group requests
+String requestEnd = "&units=metric&appid=" + API_KEY; // request arguments
+// used to store the ids of the cities that we will query. 
+// there are two strings because we will pass 2 requests
+// (a group call is limited to 100 ids/call which is why we need to pass 2)
+String subQueries[] = {"", ""}; 
 String request;
 String response;
 
-Table table;
-JSONObject json;
-JSONArray results;
-color[] colors = new color[194];
+Table table; // will store the csv info
+JSONArray results; // will store the result of the query
+color[] colors = new color[194]; // will store the colors corresponding to each city's temperature
 
+// Instanciate cube object
 L3D cube;
-int radius = 4;
+// variables used to transform polar coordinates into cartesian ones
+int radius = 4; // radius of the output sphere in voxel
 PVector center;
 PVector[] polarCoord = new PVector[194];
 PVector[] cartesCoord = new PVector[194];
 
 int dataUpdateRate = 60; // rate at which to update data in mn
 int rotationRate = 2; // rate at which to rotate the sphere in seconds
+
+// used to keep track of events
 long nextDataUpdate = 0;
 long nextRotation = 0;
 int rotationAngle = 0;
 
 
 void setup() {
+  size(512, 512, P3D);  // start simulation with 3d renderer
   table = loadTable("openweathermap_cities.csv", "header");
-  size(displayWidth, displayHeight, P3D);
+
   cube = new L3D(this);
   cube.enableMulticastStreaming(2000);
   
 }
 
-
 void draw() {
-  scale(3);
-  translate(-650, -350, 0);
-  background(0);
-  lights();
+  background(0); // set background to black
+  lights(); // turn on light
   
+  // update data if delay elapsed
   if (millis() > nextDataUpdate ) {
     getData();
-    nextDataUpdate = millis() + dataUpdateRate*60*60*1000;
+    nextDataUpdate = millis() + dataUpdateRate*60*60*1000; // reset time for next update
   }
-  
+
+  // rotate sphere if delay elapsed
   if (millis() > nextRotation ) {
-    processCoordinates(radius, rotationAngle);
-    plotCoordinates();
+    processCoordinates(radius, rotationAngle); // re-process coordinates according to new rotation angle
+    plotCoordinates(); // send new coordinates to the cube
     
-    rotationAngle += 45;
+    rotationAngle += 45; // update rotation angle, resetting to 0 if greater than 360 degrees
     if (rotationAngle > 360) {
       rotationAngle = 0;
     }
-    nextRotation = millis() + (rotationRate * 1000);
+    nextRotation = millis() + (rotationRate * 1000); // reset time for next rotation
   }
 }
 
+/*
+* Return a color according to the position of the temperature
+* over a pre-defined range
+*/
 color processColor(float value) {
   color c1 = color(0,145, 255); // color for cold temperatures
   color c2 = color(255, 94, 0); // color for warm temperatures
-  int maxTemp = 45;
+  // set temperature range used to map a value to a color 
+  int maxTemp = 45; 
   int minTemp = -30;
+  
+  // map temperature value between [0 ; 1]
   float inter = map(value, minTemp, maxTemp, 0, 1);
-   
+  
+  // map the value to a color
   color c = lerpColor(c1, c2, inter);
    
   return c;
 }
 
+/*
+* Light up the voxels according to the colors and 
+* coordinates stored in colors[] and cartesCoord[]
+*/
 void plotCoordinates() {
   cube.background(0); // clear cube voxels
   
@@ -83,12 +102,20 @@ void plotCoordinates() {
   }
 }
 
+/*
+*  Transform the polar coordinates stored in polarCoord[]
+* in cartesian ones and store the result in cartesCoord[]
+*/
 void processCoordinates(int radius, int rotation) {
   for (int i=0; i<polarCoord.length; i++) {
     cartesCoord[i] = projectCoordinates(polarCoord[i].x, polarCoord[i].y, radius, rotation);
   }
 }
 
+/*
+* Transform polar coordinates (lat, long) into cartesian (x, y, z).
+* Option: a rotation can be applied to the referencial
+*/
 PVector projectCoordinates(float latitude, float longitude, float r, int rotation) {
   // convert degrees in radians
   float theta = (latitude*PI)/180;
@@ -107,6 +134,9 @@ PVector projectCoordinates(float latitude, float longitude, float r, int rotatio
   return new PVector(floor(x_p), floor(y), floor(z_p));
 }
 
+/*
+* Query the OpenWeatherMap API and parse the result
+*/
 void getData() {
   int i = 0;
   for (TableRow row : table.rows()) {   

@@ -24,24 +24,29 @@ int nextUpdate = 0;
 int updateRate = 4; // update rate in hours. Since the each data point is an average over 4h, update every 4h
 
 void setup() {
-  size(displayWidth, displayHeight, P3D);  // start simulation with 3d mode enabled
+  size(512, 512, P3D);  // start simulation with 3d renderer
+  
   cube = new L3D(this); // init cube 
   cube.enableMulticastStreaming(2000); // enable streaming of voxel colors
 }
 
 void draw() {
-  // Adjustements so that the simulation fits my display properly
-  scale(3);
-  translate(-650, -350, 0);
-  background(0);
-  lights();
+  background(0); // set background to black
+  lights(); // turn on light
   
+  // update data if delay elapsed
   if ((millis()-nextUpdate)>0) {
     updateData();
-    nextUpdate = millis() + updateRate*60*60;
+    nextUpdate = millis() + updateRate*60*60; // reset time for next update
   }
 }
 
+
+/*
+* Get data from Thingspeak and display values on the Cube.
+* For each data point, x represents the time and y its value rebased on 
+* a [0 ; 7] range. Each data point is given a depth of 2 voxels. 
+*/ 
 void updateData() {
   JSONArray results = getData(); // retrieve data
   int k = results.size();
@@ -60,6 +65,9 @@ void updateData() {
   }  
 }
 
+/*
+* Query Thingspeak API and parse the result
+*/
 JSONArray getData() {
   JSONObject jsonObject;
   JSONArray results;

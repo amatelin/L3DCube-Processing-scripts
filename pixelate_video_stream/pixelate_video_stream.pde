@@ -4,26 +4,18 @@ import L3D.*;
 // Instanciate cube;
 L3D cube; 
 
-//Declare objects that will hold our frames
-//p holds the original image from the video stream 
-//pOut holds the pixels values for the cube
-/*
-* Declare objects that will hold our frames.
-* p holds the original image from the video stream and will store the transformations
-* pOut holds the final pixels values (8*8) for the current frame.
-*/
-
 Capture video; // webcam stream object
 
 int[][] frames = new int [8][64]; // Array used to store the frames pixels values
 int nextFrame = 0; 
 
-boolean enable3d = true; // if set to false, only 1 frame is used.
+boolean enable3d = false; // if set to false, only 1 frame is used.
 int updateFrameRate = 5; // if enable3d set to true, frequency at which the past frames are updated
 
 int inSideSize = 512; // Size of the origin image once resized. Must be a multiple of 8. 
-int outSideSize = 8;
-int mode = 0;
+int exp = 9; // used to recompute outSideSize on keyboard action
+int outSideSize = 512; // number of pixels/side for the output image
+int mode = 0; // used to switch between pixelated image and cube view
 
 
 void setup() {
@@ -40,25 +32,30 @@ void setup() {
 }
 
 void draw() {
-  noFill();
+  cube.background(0); // init all voxels to black
   background(0); // clear simulation background
-  
+
+  // toggle between 2D and 3D view
   if (mode == 0) {
     show2D(outSideSize);
   } else {
     showCube();
   }
-
-
+  
 }
 
+/* 
+ * Display pixelated output image
+ */
 void show2D(int size) {
-  PImage pOut = pixelateImage(size);
-  scale(inSideSize/outSideSize);
-  pOut.updatePixels();
-  image(pOut, 0, 0);
+  PImage pOut = pixelateImage(size); // generate pixelated image
+  scale(inSideSize/outSideSize); // scale image object to fill the rendering screen
+  image(pOut, 0, 0); // display output image
 }
 
+/* 
+ * Display cube rendering
+ */
 void showCube() {
   cube.background(0); // clear cube background
   
@@ -86,6 +83,11 @@ void showCube() {
   }
 }
 
+/*
+* Reduce the number of pixels of an image by dividing it into as many equal
+* areas as there are pixels on the ouput image. The average RGB value of each 
+* area is computed and used to recompose the output image.
+*/
 PImage pixelateImage(int sideSize) {
   PImage p;
   p = video.copy(); // copy current webcam frame in PImage object
@@ -95,26 +97,31 @@ PImage pixelateImage(int sideSize) {
   pOut.loadPixels(); // init pixels
   
   int pxSize = inSideSize/sideSize;
-  println(pxSize);
-  int loc = 0;
   
-  
+  // Apply algorithm to extract average RGB value of each area of 
+  // the input image and recompose the output image with the results
   for (int x=0; x<width; x+=pxSize) {
     for (int y=0; y<height; y+=pxSize) {
       float[] sum = new float[3];
-      PImage subset = p.get(x, y, pxSize,pxSize);
-      subset.loadPixels();
+      
+      PImage subset = p.get(x, y, pxSize,pxSize); // get area to average
+      subset.loadPixels(); // load pixels into pixels[] array
 
+      // compute average rgb value
       for (int i=0; i<subset.pixels.length; i++) {
         sum[0] += red(subset.pixels[i])/subset.pixels.length;
         sum[1] += green(subset.pixels[i])/subset.pixels.length;
         sum[2] += blue(subset.pixels[i])/subset.pixels.length;
       }
-      loc = (sideSize-1)-(x/pxSize) + ((y/pxSize)*sideSize);
+      
+      // store average in output image 
+      int loc = (sideSize-1)-(x/pxSize) + ((y/pxSize)*sideSize);
       pOut.pixels[loc] = color(sum[0], sum[1], sum[2]);      
     }
   }
   
+  // reload image with new pixel values and return
+  pOut.updatePixels();
   return pOut;
 }
 
@@ -123,9 +130,25 @@ void captureEvent(Capture c) {
   c.read();
 }
 
-
+/* 
+ * Toggle image or cube rendering on right click
+ */
 void mousePressed() {
   if (mouseButton == RIGHT) {
     mode = (mode == 1 ? 0 : 1);
+  }
+}
+
+/* 
+ * Increase or decrease the resolution of the output image
+ * with 0 for + and 1 for -
+ */
+void keyPressed() {
+  if (keyCode ==49) {
+      exp += 1;
+      outSideSize = (int)pow(2, exp);
+  } else if (keyCode == 48) {
+    exp -= 1;
+    outSideSize = (int)pow(2, exp);
   }
 }
