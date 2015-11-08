@@ -25,8 +25,6 @@ void setup() {
   video = new Capture(this, 640/2, 480/2);
   video.start();
 
-
-
   cube=new L3D(this); // init cube
   cube.enableMulticastStreaming(2000); // start streaming current animation on port 2000
 }

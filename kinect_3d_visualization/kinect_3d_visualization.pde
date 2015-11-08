@@ -1,10 +1,10 @@
 import org.openkinect.processing.*;
 import L3D.*;
 
-// Instanciate kinnect
+// Create kinnect object
 Kinect2 kinect;
 
-// Instanciate cube;
+// Create cube object;
 L3D cube; 
 
 int inSubsetSize = 256; // size of the subset of the original image to use
@@ -144,6 +144,10 @@ void show2D(int inSize, int outSize) {
   image(image, 0, 0); // display output image
 }
 
+/* 
+* Render voxels on the cube according to their depth and color value taken 
+* from the Kinect. 
+*/
 void showCube() {
   PImage depthImage = getDepthSubset(256, 8); // get depth info
   PImage colorImage = getColorSubset(256, 8); // get color info

@@ -11,7 +11,7 @@ from helpers import testPoint, list_duplicates
 ## This file is the list of the world's capitals as scraped from wikipedia
 #path = "C:/Users/amate_000/Google Drive/WearHacks/L3DCube/Code/L3DCube-Processing-scripts/earth_weather_data/data/world_capitals.csv"
 ## That one comes from the weather API we'll be using. It's a json of all the cities in their db (+200k)
-path = "C:/Users/amate_000/Google Drive/WearHacks/L3DCube/Code/L3DCube-Processing-scripts/earth_weather_data/data/openweathermap_cities.list.json"
+path = ".../earth_weather_data/data/openweathermap_cities.list.json"
 
 # Parse json file
 raw_data = []

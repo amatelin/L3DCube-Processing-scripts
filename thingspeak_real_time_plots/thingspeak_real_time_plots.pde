@@ -3,14 +3,12 @@ import L3D.*;
 
 
 // First set-up the request url
-GetRequest get;
 String channelId = "53833"; // id of the thingspeak channel to connect to
 String requestParams = "?average=240&days=2"; // retrieve the average values over 4h periods
 String requestStart = "https://api.thingspeak.com/channels/";
 String requestEnd = "/feeds.json/";
-
 String request = requestStart + channelId + requestEnd + requestParams;
-String response;
+
 
 // Set-up parameters for the plots
 int[][] metadata = {{15, 25}, {30, 40}, {1000, 1050}, {0, 80}}; // lower and upper range of the data series. Used to map original values on 8 voxels
@@ -71,8 +69,10 @@ void updateData() {
 JSONArray getData() {
   JSONObject jsonObject;
   JSONArray results;
+  GetRequest get;
+  String response;
   
-  get = new GetRequest(request); 
+  get = new GetRequest(request); // instanciate new GET request object
   get.send(); // send GET request to thingspeak
   response = get.getContent(); // retrieve response 
   jsonObject = parseJSONObject(response); // parse response

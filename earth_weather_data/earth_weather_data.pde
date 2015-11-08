@@ -1,7 +1,7 @@
 import http.requests.*;
 import L3D.*;
 
-// First set-up the request url
+// First set-up the request parameters and url
 GetRequest get;
 String API_KEY = "YOUR_API_KEY"; // Your OpenWeatherMap API key to authenticate your requests
 String requestStart = "http://api.openweathermap.org/data/2.5/group?id="; // base url for group requests
@@ -19,6 +19,7 @@ color[] colors = new color[194]; // will store the colors corresponding to each 
 
 // Instanciate cube object
 L3D cube;
+
 // variables used to transform polar coordinates into cartesian ones
 int radius = 4; // radius of the output sphere in voxel
 PVector center;
